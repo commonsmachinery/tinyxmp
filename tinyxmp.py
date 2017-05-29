@@ -168,7 +168,6 @@ class JpegMetadata(Metadata):
             f.close()
             if temp:
                 temp.close()
-                os.unlink(temp.name)
 
     def _read_segment(self, f):
         magic = f.read(1)
