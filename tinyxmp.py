@@ -12,7 +12,7 @@ import struct
 import zlib
 import tempfile
 
-class XmpError(Exception):
+class XMPError(Exception):
     pass
 
 
