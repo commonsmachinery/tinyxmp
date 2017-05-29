@@ -12,42 +12,43 @@ import struct
 import zlib
 import tempfile
 
-class XmpError(Exception):
+class XMPError(Exception):
     pass
 
 
 def wrap_packet(rdf, guid=None):
     if guid is None:
-        guid = uuid.uuid4().hex
-    bom = '\xef\xbb\xbf'
-    return '<?xpacket begin="%s" id="%s"?>' % (bom, guid) + \
-           '<x:xmpmeta xmlns:x="adobe:ns:meta/">' + rdf + \
-           '</x:xmpmeta>' + \
-           '<?xpacket end="w"?>'
+        guid = uuid.uuid4().hex.encode()
+    bom = b'\xef\xbb\xbf'
+    return (b'<?xpacket begin="%s" id="%s"?>' % (bom, guid) + \
+           b'<x:xmpmeta xmlns:x="adobe:ns:meta/">' + \
+           bytes(rdf) + \
+           b'</x:xmpmeta>' + \
+           b'<?xpacket end="w"?>')
 
 def unwrap_packet(xmp):
-    rdf_start = xmp.find("<rdf:RDF")
-    rdf_end = xmp.find("</rdf:RDF>") + 10
+    rdf_start = xmp.find(b"<rdf:RDF")
+    rdf_end = xmp.find(b"</rdf:RDF>") + 10
     return xmp[rdf_start:rdf_end]
 
 def packet_is_wrapped(xmp):
-    return xmp.count("<?xpacket") == 2
+    return xmp.count(b"<?xpacket") == 2
 
 # TODO: deal with unwrapped packets
 def pad_packet(xmp, size):
     if len(xmp) > size:
         raise XMPError("XMP packet too big to fit specified size")
     delta = size - len(xmp)
-    packet_end = xmp.rfind("<?xpacket")
+    packet_end = xmp.rfind(b"<?xpacket")
     left = xmp[:packet_end]
     right = xmp[packet_end:]
 
-    pad = bytearray(' ' * delta)
+    pad = bytearray(b' ' * delta)
     for i in range(0, len(pad), 80):
-        pad[i] = '\n'
-    pad[-1] = '\n'
+        pad[i] = ord(b'\n')
+    pad[-1] = ord(b'\n')
 
-    return str(left + pad + right)
+    return (left + bytes(pad) + right)
 
 
 class Metadata(object):
@@ -145,7 +146,7 @@ class JpegMetadata(Metadata):
                     temp.write(buf)
 
                     new_xmp = pad_packet(new_xmp, (len(new_xmp) // 4000 + 1) * 4000)
-                    self._write_segment(temp, 0xe1, "http://ns.adobe.com/xap/1.0/\x00" + new_xmp)
+                    self._write_segment(temp, 0xe1, b"http://ns.adobe.com/xap/1.0/\x00" + new_xmp)
 
                     f.seek(xmp_seg_size, 1)
                     buf = f.read()
@@ -158,7 +159,7 @@ class JpegMetadata(Metadata):
                     # write in place
                     f.seek(xmp_seg_pos)
                     new_xmp = pad_packet(new_xmp, len(xmp_packet))
-                    self._write_segment(f, 0xe1, "http://ns.adobe.com/xap/1.0/\x00" + new_xmp)
+                    self._write_segment(f, 0xe1, b"http://ns.adobe.com/xap/1.0/\x00" + new_xmp)
 
                 xmp_packet = new_xmp
 
@@ -168,7 +169,6 @@ class JpegMetadata(Metadata):
             f.close()
             if temp:
                 temp.close()
-                os.unlink(temp.name)
 
     def _read_segment(self, f):
         magic = f.read(1)
@@ -180,7 +180,7 @@ class JpegMetadata(Metadata):
         return type, length, data
 
     def _write_segment(self, f, type, data):
-        segment = struct.pack(">cBH%ds" % len(data), '\xff', type, len(data) + 2, data)
+        segment = struct.pack(">cBH%ds" % len(data), b'\xff', type, len(data) + 2, data)
         f.write(segment)
 
 
@@ -238,7 +238,7 @@ class PngMetadata(Metadata):
                     temp.write(buf)
 
                     new_xmp = pad_packet(new_xmp, (len(new_xmp) // 4000 + 1) * 4000)
-                    self._write_chunk(temp, "iTXt", 'XML:com.adobe.xmp\x00\x00\x00\x00\x00' + new_xmp)
+                    self._write_chunk(temp, "iTXt", b'XML:com.adobe.xmp\x00\x00\x00\x00\x00' + new_xmp)
 
                     f.seek(xmp_seg_size, 1)
                     buf = f.read()
@@ -256,7 +256,7 @@ class PngMetadata(Metadata):
                     f = open(self.filename, "r+b")
                     f.seek(xmp_seg_pos)
                     new_xmp = pad_packet(new_xmp, len(xmp_packet))
-                    self._write_chunk(f, "iTXt", 'XML:com.adobe.xmp\x00\x00\x00\x00\x00' + new_xmp)
+                    self._write_chunk(f, "iTXt", b'XML:com.adobe.xmp\x00\x00\x00\x00\x00' + new_xmp)
                 finally:
                     f.close()
 
