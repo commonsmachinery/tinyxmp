@@ -4,8 +4,10 @@
 #
 # Authors: Artem Popov <artfwo@commonsmachinery.se>
 #
-# Distributed under an GPLv2 license, please see LICENSE in the top dir.
-
+# Distributed under an MIT license, please see LICENSE in the top dir.
+#
+# SPDX-License-Identifier: MIT
+#
 import os, shutil
 import uuid
 import struct

@@ -10,5 +10,5 @@ setup(
     version='0.1',
     py_modules=['tinyxmp'],
     include_package_data=True,
-    license='GPLv2',
+    license='MIT',
 )
