@@ -210,14 +210,14 @@ class PngMetadata(Metadata):
                 file_pos = f.tell()
                 chunk_length, chunk_type, chunk_data, chunk_crc = self._read_chunk(f)
 
-                if chunk_type == "IHDR":
+                if chunk_type == b'IHDR':
                     xmp_seg_pos = f.tell()
-                elif chunk_type == "iTXt" and chunk_data.startswith(b'XML:com.adobe.xmp\x00\x00\x00\x00\x00'):
+                elif chunk_type == b'iTXt' and chunk_data.startswith(b'XML:com.adobe.xmp\x00\x00\x00\x00\x00'):
                     xmp_seg_pos = file_pos
                     xmp_seg_size = chunk_length + 12
                     xmp_packet = chunk_data[22:] # strip namespace
                     break
-                elif chunk_type == "IEND":
+                elif chunk_type == b'IEND':
                     break
         finally:
             f.close()
@@ -240,7 +240,7 @@ class PngMetadata(Metadata):
                     temp.write(buf)
 
                     new_xmp = pad_packet(new_xmp, (len(new_xmp) // 4000 + 1) * 4000)
-                    self._write_chunk(temp, "iTXt", b'XML:com.adobe.xmp\x00\x00\x00\x00\x00' + new_xmp)
+                    self._write_chunk(temp, b'iTXt', b'XML:com.adobe.xmp\x00\x00\x00\x00\x00' + new_xmp)
 
                     f.seek(xmp_seg_size, 1)
                     buf = f.read()
@@ -258,7 +258,7 @@ class PngMetadata(Metadata):
                     f = open(self.filename, "r+b")
                     f.seek(xmp_seg_pos)
                     new_xmp = pad_packet(new_xmp, len(xmp_packet))
-                    self._write_chunk(f, "iTXt", b'XML:com.adobe.xmp\x00\x00\x00\x00\x00' + new_xmp)
+                    self._write_chunk(f, b'iTXt', b'XML:com.adobe.xmp\x00\x00\x00\x00\x00' + new_xmp)
                 finally:
                     f.close()
 
